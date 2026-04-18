@@ -1,0 +1,16 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+# Proxy para evitar CORS con la API pública de VTEX/SBS
+[[redirects]]
+  from = "/vtex-api/*"
+  to = "https://www.sbs.com.ar/:splat"
+  status = 200
+  force = true
+
+# SPA fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
