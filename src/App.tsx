@@ -1,10 +1,20 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { parseInputCSV, parseISBNList, rowsToCsv } from './services/csvProcessor';
 import type { InputRow } from './services/csvProcessor';
 import { useScraper } from './hooks/useScraper';
 import { getImage, getAllStoredISBNs, base64ToBlob, clearAllImages, getStorageUsageMB } from './services/imageStorage';
+import {
+  isDemoMode,
+  capInputsForDemo,
+  getTruncationCount,
+  canStartDemoScrape,
+  recordDemoScrapeStart,
+  getDemoRunsToday,
+  DEMO_MAX_RECORDS,
+  DEMO_MAX_INTENTOS_POR_DIA,
+} from './config/demo';
 import './App.css';
 
 type Tab = 'upload' | 'results';
@@ -15,10 +25,18 @@ export default function App() {
   const [parseError, setParseError] = useState('');
   const [selectedRowIdx, setSelectedRowIdx] = useState<number | null>(null);
   const [storageInfo, setStorageInfo] = useState<string>('');
+  const [demoTruncation, setDemoTruncation] = useState('');
+  const [demoUsageTick, setDemoUsageTick] = useState(0);
   const { status, rows, progress, run, pause, resume, stop, reset } = useScraper();
+  const isDemo = useMemo(() => isDemoMode(), []);
+  const runsInfo = useMemo(
+    () => (isDemo ? getDemoRunsToday() : { used: 0, max: 0, remaining: 0 }),
+    [isDemo, demoUsageTick],
+  );
 
   const handleFile = useCallback((file: File) => {
     setParseError('');
+    setDemoTruncation('');
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -26,7 +44,13 @@ export default function App() {
         let parsed = parseInputCSV(text);
         if (parsed.length === 0) parsed = parseISBNList(text);
         if (parsed.length === 0) { setParseError('No se encontraron ISBNs válidos.'); return; }
-        setInputs(parsed);
+        const n = getTruncationCount(parsed.length);
+        if (n > 0) {
+          setDemoTruncation(
+            `En modo demostración se procesan como máximo ${DEMO_MAX_RECORDS} títulos. No se incluyen en esta vuelta: ${n}.`,
+          );
+        }
+        setInputs(capInputsForDemo(parsed));
       } catch (err) { setParseError(`Error: ${err}`); }
     };
     reader.readAsText(file, 'utf-8');
@@ -40,18 +64,30 @@ export default function App() {
 
   const startScrape = useCallback(() => {
     if (inputs.length === 0) return;
+    if (isDemo && !canStartDemoScrape()) {
+      setParseError(
+        `Límite de la demostración: ya se usaron los ${DEMO_MAX_INTENTOS_POR_DIA} intentos permitidos hoy. Volvé mañana o usá la versión de producción.`,
+      );
+      return;
+    }
+    if (isDemo) {
+      recordDemoScrapeStart();
+      setDemoUsageTick((k) => k + 1);
+    }
     setTab('results');
     run(inputs);
-  }, [inputs, run]);
+  }, [inputs, run, isDemo]);
 
   const downloadCSV = useCallback(() => {
+    if (isDemo) return;
     if (rows.length === 0) return;
     const csv = rowsToCsv(rows);
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     saveAs(blob, 'sbs_output.csv');
-  }, [rows]);
+  }, [rows, isDemo]);
 
   const downloadImages = useCallback(async () => {
+    if (isDemo) return;
     const isbns = getAllStoredISBNs();
     if (isbns.length === 0) { alert('No hay imágenes almacenadas.'); return; }
     const zip = new JSZip();
@@ -66,7 +102,7 @@ export default function App() {
     }
     const content = await zip.generateAsync({ type: 'blob' });
     saveAs(content, 'sbs_imagenes.zip');
-  }, []);
+  }, [isDemo]);
 
   const checkStorage = useCallback(() => {
     const mb = getStorageUsageMB();
@@ -77,8 +113,17 @@ export default function App() {
 
   const selectedRow = selectedRowIdx !== null ? rows[selectedRowIdx] : null;
 
+  const demoBlockStart = isDemo && !canStartDemoScrape();
   return (
     <div className="app">
+      {isDemo && (
+        <div className="demo-ribbon" role="status">
+          <span className="demo-ribbon-title">Modo demostración</span>
+          <span className="demo-ribbon-text">
+            Sin descargar archivos. Hasta {DEMO_MAX_RECORDS} títulos por proceso. Máx. {DEMO_MAX_INTENTOS_POR_DIA} intentos al día: hoy {runsInfo.used} de {runsInfo.max} (el contador vuelve a 0 a las 0:00, hora local de tu navegador). En producción no aplica.
+          </span>
+        </div>
+      )}
       <header className="header">
         <div className="header-logo" title="Faro Azul — herramienta de catálogo SBS/VTEX">
           <div className="logo-wordmark">
@@ -115,6 +160,8 @@ export default function App() {
             </div>
 
             {parseError && <div className="error-banner">{parseError}</div>}
+            {demoTruncation && <div className="info-banner demo-info">{demoTruncation}</div>}
+            {isDemo && demoBlockStart && <div className="info-banner demo-warn">Ya alcanzaste los {DEMO_MAX_INTENTOS_POR_DIA} intentos de hoy. Podés seguir viendo Resultados, pero no podés volver a iniciar una carga hasta mañana.</div>}
 
             {inputs.length > 0 && (
               <div className="ready-panel">
@@ -126,7 +173,12 @@ export default function App() {
                     {inputs.length > 6 && <span className="isbn-chip">+{inputs.length - 6}</span>}
                   </div>
                 </div>
-                <button className="btn-primary" onClick={startScrape}>🚀 Iniciar scraping</button>
+                <button
+                  className="btn-primary"
+                  onClick={startScrape}
+                  disabled={demoBlockStart}
+                  title={demoBlockStart ? `Demostración: ${DEMO_MAX_INTENTOS_POR_DIA} intentos por día` : undefined}
+                >🚀 Iniciar scraping</button>
               </div>
             )}
 
@@ -155,16 +207,20 @@ export default function App() {
               </div>
             )}
 
+            {isDemo && (
+              <div className="info-banner demo-info results-demo-note" role="note">En esta demostración no se pueden bajar el CSV ni el ZIP. La versión completa lo permite.</div>
+            )}
+
             <div className="results-toolbar">
               <div className="toolbar-left">
-                <span className="results-count">{rows.length} productos</span>
+                <span className="results-count">{rows.length} productos{isDemo ? ` (máx. ${DEMO_MAX_RECORDS} en demo)` : ''}</span>
                 <span className={`status-badge status-${status}`}>{
                   status === 'running' ? '⚡ Procesando' : status === 'paused' ? '⏸ Pausado' : status === 'done' ? '✅ Completado' : ''
                 }</span>
               </div>
               <div className="toolbar-right">
-                <button className="btn-outline" onClick={downloadCSV} disabled={rows.length === 0}>📥 Descargar CSV</button>
-                <button className="btn-outline" onClick={downloadImages}>🗜️ ZIP imágenes</button>
+                <button className="btn-outline" onClick={downloadCSV} disabled={rows.length === 0 || isDemo} title={isDemo ? 'No disponible en demostración' : undefined}>📥 Descargar CSV</button>
+                <button className="btn-outline" onClick={downloadImages} disabled={isDemo} title={isDemo ? 'No disponible en demostración' : undefined}>🗜️ ZIP imágenes</button>
                 <button className="btn-ghost-sm" onClick={() => { clearAllImages(); alert('Imágenes borradas'); }}>🗑️</button>
                 <button className="btn-ghost-sm" onClick={() => { reset(); setTab('upload'); }}>↩ Nuevo</button>
               </div>
