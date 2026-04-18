@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { capInputsForDemo, isDemoMode } from '../config/demo';
 import { searchByISBN, fetchImageAsBase64 } from '../services/vtexApi';
 import { buildOutputRow } from '../services/csvProcessor';
 import type { InputRow, OutputRow } from '../services/csvProcessor';
@@ -26,10 +27,12 @@ export function useScraper() {
     pauseRef.current = false;
     abortRef.current = false;
 
+    const list = isDemoMode() ? capInputsForDemo(inputs) : inputs;
+
     const results: OutputRow[] = [];
     let errors = 0;
 
-    for (let i = 0; i < inputs.length; i++) {
+    for (let i = 0; i < list.length; i++) {
       if (abortRef.current) break;
 
       // Pause loop
@@ -37,8 +40,8 @@ export function useScraper() {
         await sleep(300);
       }
 
-      const input = inputs[i];
-      setProgress({ total: inputs.length, done: i, current: input.isbn, errors });
+      const input = list[i];
+      setProgress({ total: list.length, done: i, current: input.isbn, errors });
 
       try {
         // Search VTEX
@@ -73,7 +76,7 @@ export function useScraper() {
       await sleep(300);
     }
 
-    setProgress({ total: inputs.length, done: inputs.length, current: '', errors });
+    setProgress({ total: list.length, done: list.length, current: '', errors });
     setStatus('done');
   }, []);
 
