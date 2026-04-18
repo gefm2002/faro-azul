@@ -57,9 +57,9 @@ Nada de abono fijo de **mantenimiento** incluido. Lo **nuevo** o lo que salga de
 
 ## Para arrancar de verdad
 
-**Monto aceptado** + **modalidad** (con o sin alojamiento a cargo de **Structura**) + **dominio** si aplica, + **pago inicial o primera cuota** (según plan acordado, ver arriba). Con eso, **carga pública o entregable** para ustedes, aporte en pruebas, archivos y aceptación; al **cierre**: **código, documentación y** **accesos** como haya quedado.
+Aceptan **cifra y modalidad** (**300** con alojamiento un año, o **250** con alojamiento a cargo de Faro), y si va **dominio a parte**, cómo. **Primer pago o primera cuota** según lo que hayamos fijado por escrito, y con eso arrancamos pruebas y cierre. Al **cierre** **entregamos** **código, documentación y accesos** (o publicación, si aplica), como haya quedado acordado.
 
-**Plan** **de pago** fijado por mail o hoja **antes** de arranque: total, **cuotas** (si aplica) y vencimientos, que quede claro.
+**Plan de pago** fijado por mail o hoja **antes** del arranque: **total, cuotas** (si aplica) y vencimientos, para que quede claro a ambos lados.
 
 ---
 
@@ -71,20 +71,20 @@ Archivos, decisiones, una persona que mire la **prueba** (grilla, export) y diga
 
 ## Qué queda afuera (por ahora, salvo otra boca y otra cifra)
 
-Nada de: panel de que otra gente ajuste lógica sola, campañas, mail de marketing, conexión a **fuentes distintas** de SBS, ni **% por uso** ni fórmulas de cobro raras por volumen, salvo cita aparte, por fuera de este monto, si la hubiera, **a cotizar y** **acordar**. Lo **extra** a lo **de hoy** en el doc, **a cotizar**.
+**Fuera** de lo que este documento y el cierre por mail fijen: otras **fuentes o integraciones** distintas de SBS, **% por volumen** u ofertas de cobro raras que no estuvieron en la mesa, **campañas, mailers** y criterios ajenos a enriquecer listas. **Cambio grande, nuevo módulo o criterio nuevo** = **a cotizar** (como al inicio del documento), salvo otra cifra aceptada por **ambos lados** por **escrito**.
 
 ---
 
 ## Plazos
 
-Tirando bien, **entre 2 y 4 días hábiles** desde pago/arranque, material que falte y aceptación de criterio de acceso, para ver **carga** **publicada** o **entrega** **para** **que** ustedes la suban, según haya quedado.
+Tirando bien, **entre 2 y 4 días hábiles** desde pago/arranque, con lo material listo y criterio de acceso aceptado, **según haya quedado**: carga publicada, o entrega de paquetes para que ustedes desplieguen.
 
 ---
 
 ## Qué se lleva Faro al final
 
 - La **herramienta** puesta, acceso, y **código o repositorio** o lo acordado para no quedarse atrapado en un solo dispositivo.  
-- Criterio claro (este doc + lo fijen por mail) de qué entra, qué queda a parte, y a qué precio, si aplica, lo que salga de este cesto.
+- Criterio claro (este doc + lo fijen por mail) de qué entra, qué queda a parte y a qué precio, si aplica, lo que salga de este canasto.
 
 ---
 
@@ -97,7 +97,3 @@ Si te cierra, avisame en los próximos días y seguimos por el canal que prefier
 Un abrazo,  
 
 Gastón
-
----
-
-**Structura** — [structura.com.ar](https://structura.com.ar)

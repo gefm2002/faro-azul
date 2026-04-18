@@ -1,18 +1,14 @@
-/**
- * Modo demostración: activar en build o entorno con VITE_DEMO=true
- * En producción, no definir la variable o VITE_DEMO=false.
- */
+const LS_KEY = 'faro-azul-demo-v1';
+
+type DemoStore = { start: string | null; runs: number; exports: number };
+
 export function isDemoMode(): boolean {
   return import.meta.env.VITE_DEMO === 'true' || import.meta.env.VITE_DEMO === '1';
 }
 
-export const DEMO_MAX_RECORDS = 10;
-/** Máx. arranques de scraping por día en demo (cada “Iniciar scraping” cuenta 1). */
-export const DEMO_MAX_INTENTOS_POR_DIA = 2;
-const DEMO_MAX_RUNS_PER_DAY = DEMO_MAX_INTENTOS_POR_DIA;
-const LS_KEY = 'faro-azul-demo-usage';
-
-type DemoStore = { day: string; runs: number };
+const MAX_ROWS = 3;
+const MAX_STARTS = 2;
+const MAX_EXPORTS = 2;
 
 function todayLocal(): string {
   const d = new Date();
@@ -22,19 +18,29 @@ function todayLocal(): string {
   return `${y}-${m}-${day}`;
 }
 
-function readStore(): DemoStore {
+function def(): DemoStore {
+  return { start: null, runs: 0, exports: 0 };
+}
+
+function read(): DemoStore {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return { day: todayLocal(), runs: 0 };
-    const p = JSON.parse(raw) as DemoStore;
-    if (typeof p.day === 'string' && typeof p.runs === 'number') return p;
+    if (!raw) return def();
+    const p = JSON.parse(raw) as Record<string, unknown>;
+    if (p && (typeof p.runs === 'number' || typeof p.exports === 'number' || p.start != null)) {
+      return {
+        start: typeof p.start === 'string' ? p.start : null,
+        runs: typeof p.runs === 'number' ? p.runs : 0,
+        exports: typeof p.exports === 'number' ? p.exports : 0,
+      };
+    }
   } catch {
     /* — */
   }
-  return { day: todayLocal(), runs: 0 };
+  return def();
 }
 
-function writeStore(s: DemoStore) {
+function write(s: DemoStore) {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(s));
   } catch {
@@ -42,43 +48,60 @@ function writeStore(s: DemoStore) {
   }
 }
 
-function normalizedStore(): DemoStore {
-  const s = readStore();
-  const t = todayLocal();
-  if (s.day !== t) return { day: t, runs: 0 };
-  return s;
+function dayLocked(s: DemoStore): boolean {
+  if (s.start == null) return false;
+  return todayLocal() !== s.start;
 }
 
-/** Puede arrancar un nuevo scraping hoy (suma 1 al confirmar con recordDemoScrapeStart). */
+function touchStart(s: DemoStore) {
+  if (s.start == null) s.start = todayLocal();
+}
+
+export function recordDemoFileSeen(): void {
+  if (!isDemoMode()) return;
+  const s = read();
+  if (s.start != null) return;
+  s.start = todayLocal();
+  write(s);
+}
+
 export function canStartDemoScrape(): boolean {
   if (!isDemoMode()) return true;
-  return normalizedStore().runs < DEMO_MAX_RUNS_PER_DAY;
+  const s = read();
+  if (dayLocked(s)) return false;
+  return s.runs < MAX_STARTS;
 }
 
-export function getDemoRunsToday(): { used: number; remaining: number; max: number } {
-  const s = normalizedStore();
-  return {
-    used: s.runs,
-    max: DEMO_MAX_RUNS_PER_DAY,
-    remaining: Math.max(0, DEMO_MAX_RUNS_PER_DAY - s.runs),
-  };
+export function canDemoExport(): boolean {
+  if (!isDemoMode()) return true;
+  const s = read();
+  if (dayLocked(s)) return false;
+  return s.exports < MAX_EXPORTS;
 }
 
-/** Llamar una vez, justo antes de run() en modo demo, si canStart es true. */
 export function recordDemoScrapeStart(): void {
   if (!isDemoMode()) return;
-  const s = normalizedStore();
+  const s = read();
+  if (dayLocked(s)) return;
+  if (s.runs >= MAX_STARTS) return;
+  touchStart(s);
+  if (todayLocal() !== s.start) return;
   s.runs += 1;
-  s.day = todayLocal();
-  writeStore(s);
+  write(s);
+}
+
+export function recordDemoExport(): void {
+  if (!isDemoMode()) return;
+  const s = read();
+  if (dayLocked(s)) return;
+  if (s.exports >= MAX_EXPORTS) return;
+  touchStart(s);
+  if (todayLocal() !== s.start) return;
+  s.exports += 1;
+  write(s);
 }
 
 export function capInputsForDemo<T>(rows: T[]): T[] {
-  if (!isDemoMode() || rows.length <= DEMO_MAX_RECORDS) return rows;
-  return rows.slice(0, DEMO_MAX_RECORDS);
-}
-
-export function getTruncationCount(total: number): number {
-  if (!isDemoMode() || total <= DEMO_MAX_RECORDS) return 0;
-  return total - DEMO_MAX_RECORDS;
+  if (!isDemoMode() || rows.length <= MAX_ROWS) return rows;
+  return rows.slice(0, MAX_ROWS);
 }

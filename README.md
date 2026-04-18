@@ -1,6 +1,6 @@
 # Faro Azul — Herramienta de catálogo
 
-Sirve para **cargar un listado con códigos de barra (ISBN / EAN)** y armar un archivo listo para importar en la operación, apoyándose en el **catálogo público** de SBS. También permite **juntar las imágenes de las tapas** y bajarlas en un paquete cuando se usa en modo pleno (fuera de las limitaciones de demostración).
+Sirve para **cargar un listado con códigos de barra (ISBN / EAN)** y armar un archivo listo para importar en la operación, apoyándose en el **catálogo público** de SBS. También permite **juntar las imágenes de las tapas** y bajarlas en un paquete en la **instalación** que corresponda al despliegue.
 
 ---
 
@@ -13,8 +13,7 @@ Sirve para **cargar un listado con códigos de barra (ISBN / EAN)** y armar un a
 - Deja en **blanco** las celdas que, en la plantilla de carga, corresponden a *no aplica* (las que ustedes completan en oficina) **si no vienen rellenadas** en el archivo de entrada. En concreto: el **nombre, categoría, precio, stock, costo, trailer y similares** de esa categoría.
 - Luego de armar el bloque de **texto compuesto** (ficha completa con título, descripciones, autor, páginas, edad, editorial, ISBN, ficha técnica), el sistema **misma tasa el texto** en el campo *Descripción* y en *Descripción compuesta*: ambos quedan con el **mismo contenido**; no queda un texto “corto” separado en *Descripción*.
 - Con **Solo código de barras** (sin título en la planilla), el **nombre** queda en blanco en su columna, pero el título y el resumen se integran en la **ficha y en la compuesta** para no perder la información.
-- Pausa, reanudación, detener proceso, y export del archivo final y de las imágenes (**cuando la instalación no sea la de presentación restringida**).
-- Puede ofrecerse en **versión de demostración** para mostrar a clientes, con: sin bajar archivos, un tope de títulos por vez y pocos reintentos por día; al pasar a **uso en producción** esas barreras se desactivan (lo coordina quien hace el despliegue).
+- Pausa, reanudación, detener proceso, y export del archivo final y de las imágenes según el despliegue.
 
 ---
 
@@ -24,7 +23,7 @@ Sirve para **cargar un listado con códigos de barra (ISBN / EAN)** y armar un a
 2. Revisar **cuántos códigos** se tomaron.
 3. **Iniciar** el proceso. Se puede parar y seguir.
 4. Revisar en **resultados** la grilla y el detalle.
-5. **Bajar** el listado y el paquete de imágenes si la instalación lo permite.
+5. **Bajar** el listado y el paquete de imágenes, cuando el despliegue lo ofrezca.
 
 ---
 
