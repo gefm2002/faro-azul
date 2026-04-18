@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { capInputsForDemo, isDemoMode } from '../config/demo';
+import { capInputsForDemo, isDemoMode, DEMO_ROW_CAP } from '../config/demo';
 import { searchByISBN, fetchImageAsBase64 } from '../services/vtexApi';
 import { buildOutputRow } from '../services/csvProcessor';
 import type { InputRow, OutputRow } from '../services/csvProcessor';
@@ -27,13 +27,15 @@ export function useScraper() {
     pauseRef.current = false;
     abortRef.current = false;
 
-    const list = isDemoMode() ? capInputsForDemo(inputs) : inputs;
+    const list = capInputsForDemo(inputs);
 
     const results: OutputRow[] = [];
     let errors = 0;
+    const totalPlanned = isDemoMode() ? Math.min(DEMO_ROW_CAP, list.length) : list.length;
 
     for (let i = 0; i < list.length; i++) {
       if (abortRef.current) break;
+      if (isDemoMode() && i >= DEMO_ROW_CAP) break;
 
       // Pause loop
       while (pauseRef.current) {
@@ -41,7 +43,7 @@ export function useScraper() {
       }
 
       const input = list[i];
-      setProgress({ total: list.length, done: i, current: input.isbn, errors });
+      setProgress({ total: totalPlanned, done: i, current: input.isbn, errors });
 
       try {
         // Search VTEX
@@ -74,9 +76,11 @@ export function useScraper() {
 
       // Small delay to avoid rate limiting
       await sleep(300);
+
+      if (isDemoMode() && results.length >= DEMO_ROW_CAP) break;
     }
 
-    setProgress({ total: list.length, done: list.length, current: '', errors });
+    setProgress({ total: totalPlanned, done: results.length, current: '', errors });
     setStatus('done');
   }, []);
 

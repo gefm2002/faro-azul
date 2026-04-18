@@ -1,6 +1,7 @@
+# Sitio de prueba: build:demo (tope 3 filas, etc.). Entrega operativa del cliente: npm run build
 [build]
   publish = "dist"
-  command = "npm run build"
+  command = "npm run build:demo"
 
 # Proxy para evitar CORS con la API pública de VTEX/SBS
 [[redirects]]

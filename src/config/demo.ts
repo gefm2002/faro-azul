@@ -2,11 +2,15 @@ const LS_KEY = 'faro-azul-demo-v1';
 
 type DemoStore = { start: string | null; runs: number; exports: number };
 
+/** Incluye `vite build --mode demo` (aunque falle a cargar .env). */
 export function isDemoMode(): boolean {
-  return import.meta.env.VITE_DEMO === 'true' || import.meta.env.VITE_DEMO === '1';
+  if (import.meta.env.MODE === 'demo') return true;
+  const d = import.meta.env.VITE_DEMO;
+  return d === 'true' || d === '1';
 }
 
-const MAX_ROWS = 3;
+export const DEMO_ROW_CAP = 3;
+const MAX_ROWS = DEMO_ROW_CAP;
 const MAX_STARTS = 2;
 const MAX_EXPORTS = 2;
 
