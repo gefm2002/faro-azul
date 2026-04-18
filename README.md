@@ -1,76 +1,47 @@
-# Faro Azul — Herramienta de catálogo (SBS)
+# Faro Azul — Herramienta de catálogo
 
-Aplicación para **enriquecer un listado de libros** a partir del **código de barras (ISBN / EAN)**. Consulta el catálogo público de SBS, arma un CSV con **más de treinta columnas** listo para importar, y te permite **guardar las tapas** en tu navegador y bajarlas en un ZIP.
-
----
-
-## Qué podés hacer
-
-- **Subir un archivo** con muchos productos: CSV (Excel, Google Sheets, etc.) o un texto con un código por línea.
-- **Reconocer el código** aunque venga con guiones, la palabra “ISBN” o en columnas con nombres distintos (EAN, Código de barras, MPN, etc.).
-- **Completar datos** desde el catálogo en línea: título, editorial, descripción, categoría, precio, imagen de tapa, ficha (autor, páginas, edad, encuadernación, etc.) cuando el libro esté publicado.
-- **Respetar lo que ya cargaste en el CSV**: si una celda tiene dato, **ese valor manda**; si está vacía, se usa lo que venga del catálogo o un valor por defecto según la regla de abajo.
-- **Pausar, reanudar o detener** el procesamiento de la lista.
-- **Descargar** el CSV final y un **ZIP con las imágenes** de las tapas (se guardan en el navegador mientras trabajás).
+Sirve para **cargar un listado con códigos de barra (ISBN / EAN)** y armar un archivo listo para importar en la operación, apoyándose en el **catálogo público** de SBS. También permite **juntar las imágenes de las tapas** y bajarlas en un paquete cuando se usa en modo pleno (fuera de las limitaciones de demostración).
 
 ---
 
-## Cómo se usa (flujo)
+## Qué hace (funciones)
 
-1. **Importar** — arrastrá o elegí el CSV o el .txt.
-2. Revisá cuántos códigos se detectaron.
-3. **Iniciar** el proceso. Podés **pausar** y **seguir** más tarde.
-4. **Resultados** — tabla con cada ítem, estado (ok / error) y detalle al hacer clic.
-5. **Descargar CSV** y, si corresponde, **ZIP de imágenes** o **vaciar** imágenes guardadas para liberar espacio en el navegador.
-
----
-
-## Reglas de proceso (orden de prioridad)
-
-1. **Código de barras**  
-   Cada fila necesita un ISBN o EAN reconocible (típicamente 10 o 13 dígitos, o ISBN-10 con X al final). Sin eso, la fila no entra al listado de trabajo.
-
-2. **Prioridad: tu archivo > catálogo**  
-   Si en el import pusiste un precio, nombre, descripción, categoría, etc., **se conserva** en el resultado. Si dejaste la celda vacía, se rellena con lo que devuelve el catálogo o con el **valor por defecto** de la lista de abajo.
-
-3. **Valores por defecto** (solo si no vienen en el archivo ni en el catálogo)  
-   Peso 0,5 kg; alto 18 cm; ancho 13 cm; profundidad 1 cm; mostrar en tienda **SI**; envío sin cargo **NO**; producto físico **SI**; sexo **Unisex**; edad / rango de edad **Adultos** si no hay otra indicación; encuadernación frecuente **Tapa rústica** cuando el catálogo no la trae.
-
-4. **Producto no encontrado**  
-   Si el código no está en SBS, la fila queda con **error** pero **sigue valiendo** lo que hayas puesto en el import (nombre, precio, descripción, etc.): no se pierde lo que ya cargaste.
-
-5. **Nombre en el export**  
-   El nombre de venta se exporta con el formato **#** al inicio, según el lineamiento de la plantilla de carga.
-
-6. **Imágenes**  
-   Se descargan al navegador para el ZIP. No se suben a ningún servidor desde esta herramienta: todo ocurre en tu equipo.
-
-7. **Archivos de Excel (región en español)**  
-   Suelen separar columnas con **punto y coma**. La herramienta intenta leer correctamente; si algo no se ve, unificá delimitador o exportá a CSV con UTF-8.
+- **Acepta** archivos con muchas filas (hoja con columnas) o un texto con un código por línea.
+- **Reconoce** el ISBN aunque venga con guiones, con texto alrededor o bajo nombres de columna distintos (EAN, código de barras, MPN, etc.).
+- **Completa** ficha, textos, categoría, imagen de tapa, SEO y demás **según el catálogo**, cuando el libro **está** publicado.
+- **Mantiene un orden fijo** de **31 columnas** de salida: no se agregan columnas ni modos de configuración extra; el export siempre responde a esa definición.
+- Deja en **blanco** las celdas que, en la plantilla de carga, corresponden a *no aplica* (las que ustedes completan en oficina) **si no vienen rellenadas** en el archivo de entrada. En concreto: el **nombre, categoría, precio, stock, costo, trailer y similares** de esa categoría.
+- Luego de armar el bloque de **texto compuesto** (ficha completa con título, descripciones, autor, páginas, edad, editorial, ISBN, ficha técnica), el sistema **misma tasa el texto** en el campo *Descripción* y en *Descripción compuesta*: ambos quedan con el **mismo contenido**; no queda un texto “corto” separado en *Descripción*.
+- Con **Solo código de barras** (sin título en la planilla), el **nombre** queda en blanco en su columna, pero el título y el resumen se integran en la **ficha y en la compuesta** para no perder la información.
+- Pausa, reanudación, detener proceso, y export del archivo final y de las imágenes (**cuando la instalación no sea la de presentación restringida**).
+- Puede ofrecerse en **versión de demostración** para mostrar a clientes, con: sin bajar archivos, un tope de títulos por vez y pocos reintentos por día; al pasar a **uso en producción** esas barreras se desactivan (lo coordina quien hace el despliegue).
 
 ---
 
-## Entradas aceptadas
+## Cómo se usa
 
-| Forma | Contenido |
-|--------|------------|
-| **CSV** | Primera fila: nombres de columna. Filas siguientes: un producto por fila. Hace falta al menos una columna identificable con el código (ver abajo). |
-| **Texto** | Un código por línea; también separados por coma o punto y coma. |
-| **Formato “vertical”** (poco frecuente) | Nombres de campo en la primera **columna** e ítems en columnas a la derecha. Solo aplica si la hoja arranca con **Identificador** en la fila/estructura esperada. |
-| **Lista de códigos** | Se aceptan 10 o 13 dígitos (y ISBN-10 con X) limpios o con guiones o espacios. |
-
-**Columnas típicas para el código (cualquiera sirve):** Código de barras, EAN, ISBN, MPN, etc. Si no hay encabezado claro, se busca un número válido en la fila.
-
-También podés traer de entrada **todas** las columnas de salida que quieras precargar (precio, stock, SKU, medidas, descripciones, trailer, costo, etc.): con cabecera que coincida o sea muy parecida a la del CSV de salida.
+1. Importar el archivo.
+2. Revisar **cuántos códigos** se tomaron.
+3. **Iniciar** el proceso. Se puede parar y seguir.
+4. Revisar en **resultados** la grilla y el detalle.
+5. **Bajar** el listado y el paquete de imágenes si la instalación lo permite.
 
 ---
 
-## Salida: columnas del CSV (en este orden)
+## Algunas reglas (solo funcionales)
 
-El archivo generado trae **31 columnas** de producto, en el mismo orden de la plantilla de trabajo:
+- Sin código de fila no hay producto: hay que trascribir o detectar al menos un ISBN o EAN válido por renglón.
+- **Campos *no aplica* en la plantilla:** si la celda de entrada **está llena**, se mantiene; si **está vacía**, se exporta **vacía**; no se copia ahi un precio o título de catálogo, para no chocar con su operación.
+- Otras celdas (ficha, marca, descripción, tags, SEO, autor, páginas, imagen, etc. cuando el dato venga de catálogo) **sí** se rellenan a partir del catálogo, salvo lo que ustedes ya vengan cargado en el archivo: **llegó en el import, gana.**
+- Si el título no está en SBS, se marca el error en la grilla, pero se conserva lo que ya haya puesto en el import en las celdas que apliquen.
+- Nombre comercial: si lo cargan en su CSV, se respeta y se ajusta a la convención de **#** al inicio según la plantilla.
+
+---
+
+## Las 31 columnas del listado (orden fijo)
 
 1. Identificador de URL  
-2. Nombre (con # al inicio según criterio de carga)  
+2. Nombre (según carga)  
 3. Categorías  
 4. Precio  
 5. Precio promocional  
@@ -83,50 +54,25 @@ El archivo generado trae **31 columnas** de producto, en el mismo orden de la pl
 12. Código de barras  
 13. Mostrar en tienda  
 14. Envío sin cargo  
-15. Descripción (texto corto / ficha)  
+15. **Descripción** (mismo texto que la ficha compuesta)  
 16. Tags  
 17. Título para SEO  
 18. Descripción para SEO  
 19. Marca (editorial)  
 20. Producto físico  
-21. MPN (número de pieza del fabricante) — en la práctica el mismo ISBN/EAN  
+21. MPN (en la práctica el mismo código de barras)  
 22. Sexo  
 23. Rango de edad  
 24. Costo  
 25. Autor  
-26. Pag. (páginas)  
+26. Páginas (Pag.)  
 27. EDAD  
-28. FOTO TAPA (URL de la imagen)  
+28. Foto tapa (URL)  
 29. Encuadernación  
 30. Trailer / video  
-31. **Descripción compuesta** (bloque armado: título, descripción, autor, páginas, edad, editorial, ISBN, ficha)
+31. **Descripción compuesta** (idéntica al bloque de la columna 15)
 
----
-
-## Referencia rápida (qué aporta el catálogo vs. tu planilla)
-
-- **Obligatorio aportar por código:** título, marca, descripción, tags, SEO, autor, páginas, edad, encuadernación, imagen, **cuando** el producto esté en el catálogo y tú no los hayas fijado ya en el import.  
-- **Suele ir en la planilla de partida o por defecto:** medidas, stock, “mostrar en tienda”, “envío sin cargo”, MPN, sexo, costo, trailer, precio promocional, identificador de URL.  
-- **Compuesta (columna 31):** se arma con la lógica de plantilla; si en el import traés una **Descripción compuesta** entera, puede usarse tal cual.
-
----
-
-## Modo demostración (presentaciones)
-
-Solo entra en juego si la app se **construyó o arranca** con la opción de entorno `VITE_DEMO=true` (en local o en el hosting, según se configure al desplegar).
-
-- **No hay descargas** de CSV ni de ZIP de imágenes: los botones quedan deshabilitados.
-- Se procesan **como máximo 10** títulos por import; si el archivo trae más, se avisa y el resto no se incluye en esa vuelta.
-- Cada dispositivo puede **volver a iniciar el scraping como máximo 2 veces por día (2 intentos)** (reloj del propio navegador; a medianoche local el contador vuelve a cero). No impide **ver** resultados ni **pausar y reanudar**; cada clic en *Iniciar scraping* gasta 1 intento. Al agotarlos, no podés **iniciar otra carga** hasta el día siguiente.
-- Al pasar a **producción**, basta con **quitar** `VITE_DEMO` o fijarla a `false` y volver a publicar, para destrabar descargas, toda la lista e intentos ilimitados.
-
-**Build de demo (ejemplo):** `npm run build:demo` (equivalente a poner `VITE_DEMO=true` en el build de producción).
-
----
-
-## Aviso de uso
-
-Los datos mostrados son los que ofrece el **sitio y catálogo públicos** de SBS. Esta herramienta no reemplaza validaciones de negocio; revisá precios, stock y textos antes de un import masivo a tu tienda.
+**Importante para la carga a tienda:** validar con su equipo de negocio precio, stock y legales antes de importar a gran escala.
 
 ---
 

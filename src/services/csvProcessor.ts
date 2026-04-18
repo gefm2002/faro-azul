@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import type { VtexProduct } from './vtexApi';
-import { extractSpec, getBestImageUrl, getPrice } from './vtexApi';
+import { extractSpec, getBestImageUrl } from './vtexApi';
 
 // ─────────────────────────────────────────────
 // TIPOS
@@ -295,7 +295,7 @@ function rawToInputRow(raw: Record<string, string>, isbn: string): InputRow {
     sku: getField(raw, 'sku'),
     nombre: getField(raw, 'nombre', '#nombre'),
     precio: getField(raw, 'precio'),
-    stock: getField(raw, 'stock') || '2',
+    stock: getField(raw, 'stock'),
     peso: getField(raw, 'peso (kg)') || DEFAULTS['Peso (kg)']!,
     alto: getField(raw, 'alto (cm)') || DEFAULTS['Alto (cm)']!,
     ancho: getField(raw, 'ancho (cm)') || DEFAULTS['Ancho (cm)']!,
@@ -321,7 +321,7 @@ export function parseISBNList(text: string): InputRow[] {
     sku: '',
     nombre: '',
     precio: '',
-    stock: '2',
+    stock: '',
     peso: DEFAULTS['Peso (kg)']!,
     alto: DEFAULTS['Alto (cm)']!,
     ancho: DEFAULTS['Ancho (cm)']!,
@@ -365,11 +365,23 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
       ],
       '',
     );
+    const descripcionYCompError =
+      compIn
+      || buildDescripcionCompuesta(
+        nombreM || input.nombre || 'Producto',
+        descIn,
+        fromInputOr(input, ['Autor', 'autor'], ''),
+        fromInputOr(input, ['Pag.', 'Páginas'], ''),
+        edadErr,
+        fromInputOr(input, ['Marca', 'Editorial'], ''),
+        input.isbn,
+        fromInputOr(input, ['Encuadernación', 'Encuadernacion'], 'Tapa rústica'),
+      );
     return {
       'Identificador de URL': fromInputOr(input, ['Identificador de URL', 'Identificador de url', 'url'], ''),
       'Nombre': outNombre,
       'Categorías': catIn,
-      'Precio': fromInputOr(input, ['Precio', 'precio'], input.precio || ''),
+      'Precio': fromInputOr(input, ['Precio', 'precio'], ''),
       'Precio promocional': fromInputOr(
         input,
         ['Precio promocional', 'Precio Promocional'],
@@ -379,7 +391,7 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
       'Alto (cm)': input.alto,
       'Ancho (cm)': input.ancho,
       'Profundidad (cm)': input.profundidad,
-      'Stock': fromInputOr(input, ['Stock', 'stock'], input.stock),
+      'Stock': fromInputOr(input, ['Stock', 'stock'], ''),
       'SKU': fromInputOr(input, ['SKU', 'sku'], input.sku),
       'Código de barras': input.isbn,
       'Mostrar en tienda': fromInputOr(
@@ -392,7 +404,7 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
         ['Envío sin cargo', 'Envio sin cargo', 'envío sin cargo'],
         DEFAULTS['Envío sin cargo']!,
       ),
-      'Descripción': descIn,
+      'Descripción': descripcionYCompError,
       'Tags': fromInputOr(
         input,
         ['Tags', 'Tag', 'ETIQUETAS', 'etiquetas'],
@@ -436,17 +448,7 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
       ),
       'Encuadernación': fromInputOr(input, ['Encuadernación', 'Encuadernacion', 'encuad'], ''),
       'Trailer/Video': fromInputOr(input, ['Trailer/Video', 'Trailer / Video', 'Trailer', 'Video', 'Vídeo'], ''),
-      'Descripción Compuesta': compIn
-        || buildDescripcionCompuesta(
-            nombreM || input.nombre || 'Producto',
-            descIn,
-            fromInputOr(input, ['Autor', 'autor'], ''),
-            fromInputOr(input, ['Pag.', 'Páginas'], ''),
-            edadErr,
-            fromInputOr(input, ['Marca', 'Editorial'], ''),
-            input.isbn,
-            fromInputOr(input, ['Encuadernación', 'Encuadernacion'], 'Tapa rústica'),
-          ),
+      'Descripción Compuesta': descripcionYCompError,
       _isbn: input.isbn,
       _imageUrl: fromInputOr(input, ['FOTO TAPA', 'Foto Tapa', 'Foto Tapa/URL'], '') || '',
       _status: 'error',
@@ -454,15 +456,18 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
     };
   }
 
-  const nombreVtex  = (product.productName || '').replace(/^#+\s*/, '').trim();
-  const nombreIn    = fromInputOr(input, ['Nombre', 'nombre'], '');
-  const nombreBase  = (nombreIn || nombreVtex || (input.nombre || '').replace(/^#+\s*/, '')).trim();
+  // Nombre (columna plantilla = no aplica): solo lo que venga en el import; el catálogo alimenta la ficha y la compuesta, no este campo.
+  const nombreVtex = (product.productName || '').replace(/^#+\s*/, '').trim();
+  const nombreIn   = fromInputOr(input, ['Nombre', 'nombre'], '');
+  const nombreBase = (nombreIn || nombreVtex || (input.nombre || '').replace(/^#+\s*/, '')).trim();
+  const nombreOut  = nombreIn ? formatNombreVitrina(nombreIn.replace(/^#+/, '')) : '';
+  const nombreParaComp = nombreBase;
 
-  const autorV      = extractSpec(product, 'Autor') || extractSpec(product, 'autor') || '';
-  const paginasV    = extractSpec(product, 'Paginas') || extractSpec(product, 'Pag.') || extractSpec(product, 'pag') || extractSpec(product, 'Páginas') || '';
-  const edadV       = extractSpec(product, 'Edad') || extractSpec(product, 'EDAD') || extractSpec(product, 'Rango de edad') || '';
-  const encuadV     = extractSpec(product, 'Encuadernacion') || extractSpec(product, 'Encuadernación') || extractSpec(product, 'Formato') || 'Tapa rústica';
-  const categoriaV  = leafCategory(product);
+  const autorV   = extractSpec(product, 'Autor') || extractSpec(product, 'autor') || '';
+  const paginasV = extractSpec(product, 'Paginas') || extractSpec(product, 'Pag.') || extractSpec(product, 'pag') || extractSpec(product, 'Páginas') || '';
+  const edadV    = extractSpec(product, 'Edad') || extractSpec(product, 'EDAD') || extractSpec(product, 'Rango de edad') || '';
+  const encuadV  = extractSpec(product, 'Encuadernacion') || extractSpec(product, 'Encuadernación') || extractSpec(product, 'Formato') || 'Tapa rústica';
+  const categoriaV = leafCategory(product);
 
   const autor   = fromInputOr(input, ['Autor', 'autor', 'Autor/Autora'], autorV);
   const paginas = fromInputOr(input, ['Pag.', 'Pag', 'Páginas', 'Págs.'], paginasV);
@@ -482,14 +487,15 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
   const encuad  = fromInputOr(input, ['Encuadernación', 'Encuadernacion', 'Ficha técnica', 'Ficha Tecnica'], encuadV);
   const brand   = fromInputOr(input, ['Marca', 'Editorial', 'Editorial.'], product.brand ?? '');
 
-  const categoriaM = fromInputOr(input, ['Categorías', 'Categorias', 'Categoria', 'Categoría'], categoriaV);
-  const catOut     = categoriaM || 'Adultos';
+  // Categorías (no aplica): solo import, sin rellenar con catálogo
+  const categoriaM   = fromInputOr(input, ['Categorías', 'Categorias', 'Categoria', 'Categoría'], '');
 
   const descCorta = fromInputOr(
     input,
     ['Descripción', 'Descripcion', 'Descripción.'],
     product.description ?? '',
   );
+  const categoriaSeo = categoriaM || categoriaV || 'Adultos';
   const tagsM = fromInputOr(
     input,
     ['Tags', 'Tag', 'Etags', 'etiqueta'],
@@ -503,7 +509,7 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
     })(),
   );
 
-  const imageUrlV = getBestImageUrl(product);
+  const imageUrlV   = getBestImageUrl(product);
   const imageUrlM = fromInputOr(
     input,
     [
@@ -514,14 +520,18 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
     ],
     imageUrlV,
   );
-  const precio    = getPrice(product);
-  const precioStr = fromInputOr(
+  // Precio (no aplica en plantilla): solo import
+  const precioSolo  = fromInputOr(input, ['Precio', 'Precio.'], '');
+
+  const tSeo = fromInputOr(
     input,
-    ['Precio', 'Precio.'],
-    precio > 0 ? precio.toFixed(2) : (input.precio || ''),
+    [
+      'Título para SEO',
+      'Título (para SEO) (Cómo deberíamos vender: Hasta 20 caracteres)',
+      'Titulo para SEO',
+    ],
+    formatNombreVitrina(nombreBase) || '',
   );
-  const nombreOut = formatNombreVitrina(nombreBase);
-  const nombreParaComp = nombreBase;
 
   const descCompPre = fromInputOr(
     input,
@@ -543,20 +553,13 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
          input.isbn,
          encuad,
        );
+  // Tras componer, el texto de la compuesta pasa a ser el de "Descripción" (mismo valor en ambas columnas)
+  const descripcionYComp = descComp;
 
-  const tSeo = fromInputOr(
-    input,
-    [
-      'Título para SEO',
-      'Título (para SEO) (Cómo deberíamos vender: Hasta 20 caracteres)',
-      'Titulo para SEO',
-    ],
-    nombreOut,
-  );
   const dSeo = fromInputOr(
     input,
     ['Descripción para SEO', 'Descripcion para SEO (texto)', 'Descripción para Seo.'],
-    `${tSeo}${tagsM}${catOut}`,
+    `${tSeo}${tagsM}${categoriaSeo}`,
   );
 
   return {
@@ -566,8 +569,8 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
       '',
     ),
     'Nombre': nombreOut,
-    'Categorías': catOut,
-    'Precio': precioStr,
+    'Categorías': categoriaM,
+    'Precio': precioSolo,
     'Precio promocional': fromInputOr(
       input,
       ['Precio promocional', 'Precio Promocional.'],
@@ -577,7 +580,7 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
     'Alto (cm)': input.alto,
     'Ancho (cm)': input.ancho,
     'Profundidad (cm)': input.profundidad,
-    'Stock': fromInputOr(input, ['Stock', 'stocks.'], input.stock),
+    'Stock': fromInputOr(input, ['Stock', 'stocks.'], ''),
     'SKU': fromInputOr(
       input,
       ['SKU', 'Codigo  SKU.'],
@@ -594,7 +597,7 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
       ['Envío sin cargo', 'envío.'],
       DEFAULTS['Envío sin cargo']!,
     ),
-    'Descripción': descCorta,
+    'Descripción': descripcionYComp,
     'Tags': tagsM,
     'Título para SEO': tSeo,
     'Descripción para SEO': dSeo,
@@ -630,7 +633,7 @@ export function buildOutputRow(input: InputRow, product: VtexProduct | null): Ou
       ],
       '',
     ),
-    'Descripción Compuesta': descComp,
+    'Descripción Compuesta': descripcionYComp,
     _isbn: input.isbn,
     _imageUrl: imageUrlM,
     _status: 'ok',
