@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { parseInputCSV, parseISBNList, rowsToCsv } from './services/csvProcessor';
@@ -25,10 +25,17 @@ export default function App() {
   const [selectedRowIdx, setSelectedRowIdx] = useState<number | null>(null);
   const [storageInfo, setStorageInfo] = useState<string>('');
   const [demoUsageTick, setDemoUsageTick] = useState(0);
+  const [demoQuotaModalOpen, setDemoQuotaModalOpen] = useState(false);
   const { status, rows, progress, run, pause, resume, stop, reset } = useScraper();
   const isDemo = useMemo(() => isDemoMode(), []);
   const exportBlocked = useMemo(() => (isDemo ? !canDemoExport() : false), [isDemo, demoUsageTick]);
   const demoBlockStart = useMemo(() => (isDemo ? !canStartDemoScrape() : false), [isDemo, demoUsageTick]);
+
+  useEffect(() => {
+    if (isDemo && demoBlockStart && tab === 'upload') {
+      setDemoQuotaModalOpen(true);
+    }
+  }, [isDemo, demoBlockStart, tab, demoUsageTick]);
 
   const handleFile = useCallback((file: File) => {
     setParseError('');
@@ -55,7 +62,7 @@ export default function App() {
   const startScrape = useCallback(() => {
     if (inputs.length === 0) return;
     if (isDemo && !canStartDemoScrape()) {
-      setParseError('No se puede continuar con esta instancia. Contactá a quien hizo el despliegue para la versión operativa.');
+      setDemoQuotaModalOpen(true);
       return;
     }
     if (isDemo) {
@@ -156,9 +163,6 @@ export default function App() {
             </div>
 
             {parseError && <div className="error-banner">{parseError}</div>}
-            {isDemo && demoBlockStart && (
-              <div className="info-banner demo-warn">Con esta instancia no se puede iniciar otra carga. Revisá Resultados si ya hay datos.</div>
-            )}
 
             {inputs.length > 0 && (
               <div className="ready-panel">
@@ -284,6 +288,33 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {isDemo && demoQuotaModalOpen && (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="demo-quota-title"
+          onClick={() => setDemoQuotaModalOpen(false)}
+        >
+          <div
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="demo-quota-title" className="modal-title">Límite de la demostración</h2>
+            <p className="modal-body">
+              El modo de demostración alcanzó su cuota. Para seguir, contacten a <strong>Structura</strong> y soliciten
+              una nueva demostración o el acceso a la versión operativa.
+            </p>
+            <a className="modal-link" href="https://structura.com.ar" target="_blank" rel="noreferrer">structura.com.ar</a>
+            <div className="modal-actions">
+              <button type="button" className="btn-primary modal-ok" onClick={() => setDemoQuotaModalOpen(false)}>
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
